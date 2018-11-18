@@ -7,6 +7,7 @@ import pandas as pd
 import glob
 import json
 import re
+import shutil
 
 class FileChanges:
     def __init__(self, trackingdir, tempStoragePath, filename=None):
@@ -14,6 +15,8 @@ class FileChanges:
         self.tempStoragePath = tempStoragePath
         self.filename = filename
         self.fileHistory = []
+        self.keywordDict = {}
+        self.keywordDict["version"] = 0
 
     def unique_getlog(self):
         origdir = os.getcwd()
@@ -32,6 +35,7 @@ class FileChanges:
     def checkout(self,id1, file1, id2, file2):
         origdir = os.getcwd()
         os.chdir(self.trackingdir)
+        shutil.rmtree(self.tempStoragePath+"a/")
         try:
             os.mkdir(self.tempStoragePath+"a/")
         except:
@@ -41,6 +45,8 @@ class FileChanges:
         r = subprocess.run(f"{cmd}", shell=True, stdout=subprocess.PIPE)
         cmd2= "tar -xvzf "+self.tempStoragePath+"a/"+file1+" -C "+self.tempStoragePath+"a"
         r = subprocess.run(f"{cmd2}", shell=True, stdout=subprocess.PIPE)
+
+        shutil.rmtree(self.tempStoragePath+"b/")
 
         try:
             os.mkdir(self.tempStoragePath+"b/")
@@ -71,6 +77,15 @@ class FileChanges:
         print(cmd)
         response = subprocess.run(f"{cmd}", shell=True, stdout=subprocess.PIPE).stdout.decode("utf-8")
         print(str(response))
+        self.checkForKeywords(str(response))
+
+    def checkForKeywords(self, changes):
+        for line in changes.split("\n"):
+            if line.startswith(">"):
+                for key in self.keywordDict:
+                    if key in line:
+                        print("...")
+
 
     def extractHistory(self):
         date = None
@@ -80,6 +95,7 @@ class FileChanges:
         commit = None
         log = self.unique_getlog()
         for idx, logline in enumerate(log.split("\n")):
+
             if logline.startswith("commit"):
                 commitline = idx
                 commit = logline.split("commit ")[-1]
@@ -88,7 +104,12 @@ class FileChanges:
                 dateline = idx
                 datestr = ":".join(logline.split(":")[1:]).strip()
                 d = datetime.datetime.strptime(datestr, "%a %b %d %H:%M:%S %Y %z").date()
+                t = datetime.datetime.strptime(datestr, "%a %b %d %H:%M:%S %Y %z").time()
+                s= datetime.datetime.strptime(datestr, "%a %b %d %H:%M:%S %Y %z").timestamp()
+                time = str(t)
                 date = str(d)
+                timestamp = str(s)
+
                 correctcommit = False
 
             elif idx == dateline + 2:
@@ -103,6 +124,9 @@ class FileChanges:
                     change = {}
                     change["CommitID"] = commit
                     change["Date"]=date
+                    change["Time"]=time
+                    change["TimeStamp"]=timestamp
+
                     version = "No valid Versioning"
                     try:
                         # print(re.split(r"(\d+\.)(\d+\.)(\d)",post.split("/")[-1]))
@@ -125,17 +149,27 @@ class FileChanges:
         print(self.fileHistory)
         commits = []
         files = []
-        for changes in self.fileHistory:
+        for changes in sorted(self.fileHistory, key= lambda k: k["TimeStamp"]):
             commitID = changes["CommitID"]
             print(commitID)
             commits.append(commitID)
             files.append("charts/"+self.filename+"-"+changes["Version"]+".tgz")
+        print(commits)
+        for i in range(len(commits)-1):
+            self.checkout(commits[i], files[i],commits[i+1],files[i+1])
 
-        self.checkout(commits[0], files[0],commits[-1],files[-1])
 
-
-
-
+    def getTGZs(self):
+        print(self.trackingdir)
+        allfiles = [f for f in os.listdir(self.trackingdir) if os.path.isfile(os.path.join(self.trackingdir, f))]
+        filesToTrack = []
+        for filename in allfiles:
+            filemodule = re.split(r"(\-)(\d+\.)(\d+\.)(\d)", filename)[0]
+            if (filename.endswith("tgz") and filemodule not in filesToTrack):
+                filesToTrack.append(filemodule)
+                print(filemodule)
+                fc = FileChanges(self.trackingdir, self.tempStoragePath, filemodule)
+                fc.checkDiff()
 
 
 if __name__ == "__main__":
@@ -169,6 +203,16 @@ if __name__ == "__main__":
             fc = FileChanges(trackingdir,tempStoragePath, filename)
             fc.checkDiff()
 
-
+    if command == "repo":
+        print(len(sys.argv))
+        if len(sys.argv) != 4:
+            print("Syntax: {} repo <trackingdir> <tempStoragePath>".format(sys.argv[0]), file=sys.stderr)
+            sys.exit(1)
+        else:
+            trackingdir = sys.argv[2]
+            tempStoragePath = sys.argv[3]
+            print("running 'file' with "+trackingdir+", "+tempStoragePath+".")
+            fc = FileChanges(trackingdir,tempStoragePath)
+            fc.getTGZs()
     else:
         print("Unknown command.", file=sys.stderr)
