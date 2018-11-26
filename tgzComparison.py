@@ -16,7 +16,35 @@ class FileChanges:
         self.filename = filename
         self.fileHistory = []
         self.keywordDict = {}
-        self.keywordDict["version"] = 0
+        self.keywordDict["ModulName"] = filename
+        self.keywordDict["version"] = {}
+        self.keywordDict["version"]["addition"] = 0
+        self.keywordDict["version"]["change"] = 0
+        self.keywordDict["version"]["deletion"] = 0
+        self.keywordDict["appVersion"] = {}
+        self.keywordDict["appVersion"]["addition"] = 0
+        self.keywordDict["appVersion"]["change"] = 0
+        self.keywordDict["appVersion"]["deletion"] = 0
+        self.keywordDict["description"] = {}
+        self.keywordDict["description"]["addition"] = 0
+        self.keywordDict["description"]["change"] = 0
+        self.keywordDict["description"]["deletion"] = 0
+        self.keywordDict["engine"] = {}
+        self.keywordDict["engine"]["addition"] = 0
+        self.keywordDict["engine"]["change"] = 0
+        self.keywordDict["engine"]["deletion"] = 0
+        self.keywordDict["email"] = {}
+        self.keywordDict["email"]["addition"] = 0
+        self.keywordDict["email"]["change"] = 0
+        self.keywordDict["email"]["deletion"] = 0
+        self.keywordDict["name"] = {}
+        self.keywordDict["name"]["addition"] = 0
+        self.keywordDict["name"]["change"] = 0
+        self.keywordDict["name"]["deletion"] = 0
+        self.keywordDict["otherAddition"] = []
+        self.keywordDict["otherDeletions"] = []
+
+
 
     def unique_getlog(self):
         origdir = os.getcwd()
@@ -41,7 +69,7 @@ class FileChanges:
         except:
             print("Dir exists")
         cmd = "COLUMNS=200 git --work-tree="+self.tempStoragePath+"a checkout "+id1+ " -- "+file1
-        print(cmd)
+        #print(cmd)
         r = subprocess.run(f"{cmd}", shell=True, stdout=subprocess.PIPE)
         cmd2= "tar -xvzf "+self.tempStoragePath+"a/"+file1+" -C "+self.tempStoragePath+"a"
         r = subprocess.run(f"{cmd2}", shell=True, stdout=subprocess.PIPE)
@@ -55,7 +83,7 @@ class FileChanges:
 
 
         cmd = "COLUMNS=200 git --work-tree="+self.tempStoragePath+"b checkout "+id2+ " -- "+file2
-        print(cmd)
+        #print(cmd)
         r = subprocess.run(f"{cmd}", shell=True, stdout=subprocess.PIPE)
         cmd2= "tar -xvzf "+self.tempStoragePath+"b/"+file2+" -C "+self.tempStoragePath+"b"
         r = subprocess.run(f"{cmd2}", shell=True, stdout=subprocess.PIPE)
@@ -68,23 +96,44 @@ class FileChanges:
 
         findACmd = "find "+self.tempStoragePath+"a/ -name Chart.yaml"
         pathToA = str(subprocess.run(f"{findACmd}", shell=True, stdout=subprocess.PIPE).stdout.decode("utf-8")).split("\n")[0]
-        print(str(pathToA))
+        #print(str(pathToA))
         findBCmd = "find "+self.tempStoragePath+"b/ -name Chart.yaml"
         pathToB = str(subprocess.run(f"{findBCmd}", shell=True, stdout=subprocess.PIPE).stdout.decode("utf-8")).split("\n")[0]
-        print(pathToB)
+        #print(pathToB)
 
         cmd = "diff "+str(pathToA)+" "+str(pathToB)
-        print(cmd)
+        #print(cmd)
         response = subprocess.run(f"{cmd}", shell=True, stdout=subprocess.PIPE).stdout.decode("utf-8")
         print(str(response))
         self.checkForKeywords(str(response))
 
     def checkForKeywords(self, changes):
-        for line in changes.split("\n"):
-            if line.startswith(">"):
-                for key in self.keywordDict:
-                    if key in line:
-                        print("...")
+        # temparary variable to save whether addition, deletion or change
+        nonkey = True
+        for key in self.keywordDict:
+            temp = "null"
+            for line in changes.split("\n"):
+                if key in line:
+                    if line.startswith("<"):
+                        temp = "deletion"
+                    if line.startswith(">") and temp == "deletion":
+                        temp = "change"
+                    if line.startswith(">") and temp == "null":
+                        temp = "addition"
+            if temp == "addition":
+                self.keywordDict[key]["addition"]=self.keywordDict[key]["addition"]+1
+                nonkey=False
+            elif temp == "change":
+                self.keywordDict[key]["change"] = self.keywordDict[key]["change"] + 1
+                nonkey=False
+            elif temp == "addition":
+                self.keywordDict[key]["deletion"] = self.keywordDict[key]["deletion"] + 1
+                nonkey=False
+        if nonkey:
+            if line.startswith("<"):
+                self.keywordDict["otherAddition"].append(line)
+            elif line.startswith(">"):
+                self.keywordDict["otherDeletions"].append(line)
 
 
     def extractHistory(self):
@@ -126,6 +175,7 @@ class FileChanges:
                     change["Date"]=date
                     change["Time"]=time
                     change["TimeStamp"]=timestamp
+                    change["filename"]=logline.split("charts/")[-1].split(".tgz")[0]+".tgz"
 
                     version = "No valid Versioning"
                     try:
@@ -133,7 +183,9 @@ class FileChanges:
                         pre, major, minor, build, post = re.split(r"(\d+\.)(\d+\.)(\d)", logline)
                         version = major+minor+build
                     except:
-                        print("No Version NUmber")
+                        version = logline.split("/chats")[-1].split(".tgz")[0]
+                        print(version)
+                        print(" No Version NUmber")
                     change["Version"] = version
                     preBytes = logline.split("Bin ")[-1].split(" -> ")[0]
                     postBytes = logline.split("Bin ")[-1].split(" -> ")[-1].split(" bytes")[0]
@@ -153,10 +205,11 @@ class FileChanges:
             commitID = changes["CommitID"]
             print(commitID)
             commits.append(commitID)
-            files.append("charts/"+self.filename+"-"+changes["Version"]+".tgz")
+            files.append("charts/"+changes["filename"])
         print(commits)
         for i in range(len(commits)-1):
             self.checkout(commits[i], files[i],commits[i+1],files[i+1])
+        print(self.keywordDict)
 
 
     def getTGZs(self):
