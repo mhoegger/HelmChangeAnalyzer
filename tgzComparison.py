@@ -17,36 +17,109 @@ class FileChanges:
         self.fileHistory = []
         self.keywordDict = {}
         self.keywordDict["ModulName"] = filename
+
         self.keywordDict["version"] = {}
         self.keywordDict["version"]["addition"] = 0
         self.keywordDict["version"]["change"] = 0
         self.keywordDict["version"]["deletion"] = 0
+        self.keywordDict["version"]["additionDates"] = []
+        self.keywordDict["version"]["changeDates"] = []
+        self.keywordDict["version"]["deletionDates"] = []
+
         self.keywordDict["appVersion"] = {}
         self.keywordDict["appVersion"]["addition"] = 0
         self.keywordDict["appVersion"]["change"] = 0
         self.keywordDict["appVersion"]["deletion"] = 0
+        self.keywordDict["appVersion"]["additionDates"] = []
+        self.keywordDict["appVersion"]["changeDates"] = []
+        self.keywordDict["appVersion"]["deletionDates"] = []
+
         self.keywordDict["description"] = {}
         self.keywordDict["description"]["addition"] = 0
         self.keywordDict["description"]["change"] = 0
         self.keywordDict["description"]["deletion"] = 0
+        self.keywordDict["description"]["additionDates"] = []
+        self.keywordDict["description"]["changeDates"] = []
+        self.keywordDict["description"]["deletionDates"] = []
+
         self.keywordDict["engine"] = {}
         self.keywordDict["engine"]["addition"] = 0
         self.keywordDict["engine"]["change"] = 0
         self.keywordDict["engine"]["deletion"] = 0
+        self.keywordDict["engine"]["additionDates"] = []
+        self.keywordDict["engine"]["changeDates"] = []
+        self.keywordDict["engine"]["deletionDates"] = []
+
         self.keywordDict["email"] = {}
         self.keywordDict["email"]["addition"] = 0
         self.keywordDict["email"]["change"] = 0
         self.keywordDict["email"]["deletion"] = 0
+        self.keywordDict["email"]["additionDates"] = []
+        self.keywordDict["email"]["changeDates"] = []
+        self.keywordDict["email"]["deletionDates"] = []
+
         self.keywordDict["name"] = {}
         self.keywordDict["name"]["addition"] = 0
         self.keywordDict["name"]["change"] = 0
         self.keywordDict["name"]["deletion"] = 0
+        self.keywordDict["name"]["additionDates"] = []
+        self.keywordDict["name"]["changeDates"] = []
+        self.keywordDict["name"]["deletionDates"] = []
+
+        self.keywordDict["maintainers"] = {}
+        self.keywordDict["maintainers"]["addition"] = 0
+        self.keywordDict["maintainers"]["change"] = 0
+        self.keywordDict["maintainers"]["deletion"] = 0
+        self.keywordDict["maintainers"]["additionDates"] = []
+        self.keywordDict["maintainers"]["changeDates"] = []
+        self.keywordDict["maintainers"]["deletionDates"] = []
+
+        self.keywordDict["sources"] = {}
+        self.keywordDict["sources"]["addition"] = 0
+        self.keywordDict["sources"]["change"] = 0
+        self.keywordDict["sources"]["deletion"] = 0
+        self.keywordDict["sources"]["additionDates"] = []
+        self.keywordDict["sources"]["changeDates"] = []
+        self.keywordDict["sources"]["deletionDates"] = []
+
+        self.keywordDict["icon"] = {}
+        self.keywordDict["icon"]["addition"] = 0
+        self.keywordDict["icon"]["change"] = 0
+        self.keywordDict["icon"]["deletion"] = 0
+        self.keywordDict["icon"]["additionDates"] = []
+        self.keywordDict["icon"]["changeDates"] = []
+        self.keywordDict["icon"]["deletionDates"] = []
+
+        self.keywordDict["home"] = {}
+        self.keywordDict["home"]["addition"] = 0
+        self.keywordDict["home"]["change"] = 0
+        self.keywordDict["home"]["deletion"] = 0
+        self.keywordDict["home"]["additionDates"] = []
+        self.keywordDict["home"]["changeDates"] = []
+        self.keywordDict["home"]["deletionDates"] = []
+
+        self.keywordDict["apiVersion"] = {}
+        self.keywordDict["apiVersion"]["addition"] = 0
+        self.keywordDict["apiVersion"]["change"] = 0
+        self.keywordDict["apiVersion"]["deletion"] = 0
+        self.keywordDict["apiVersion"]["additionDates"] = []
+        self.keywordDict["apiVersion"]["changeDates"] = []
+        self.keywordDict["apiVersion"]["deletionDates"] = []
+
         self.keywordDict["otherAddition"] = []
         self.keywordDict["otherDeletions"] = []
+        self.dateOfChange = ""
 
 
 
     def unique_getlog(self):
+        """
+        Gets the whole git log history of repository denoted in the "trackingdir"
+        Will return the log in chronological order. so oldest commit first.
+
+        :return: log as a string
+        """
+
         origdir = os.getcwd()
         os.chdir(self.trackingdir)
 
@@ -55,7 +128,6 @@ class FileChanges:
         r = subprocess.run(f"{cmd} --reverse", shell=True, stdout=subprocess.PIPE)
 
         log = r.stdout.decode("utf-8")
-        print("-----LOG END-----")
         os.chdir(origdir)
         return str(log)
 
@@ -109,31 +181,40 @@ class FileChanges:
 
     def checkForKeywords(self, changes):
         # temparary variable to save whether addition, deletion or change
-        nonkey = True
+        temp = {}
         for key in self.keywordDict:
-            temp = "null"
-            for line in changes.split("\n"):
+            temp[key]="null"
+
+        for line in changes.split("\n"):
+            nonkey = True
+            for key in self.keywordDict:
                 if key in line:
+                    nonkey = False
                     if line.startswith("<"):
-                        temp = "deletion"
-                    if line.startswith(">") and temp == "deletion":
-                        temp = "change"
-                    if line.startswith(">") and temp == "null":
-                        temp = "addition"
-            if temp == "addition":
+                        temp[key] = "deletion"
+                    if line.startswith(">") and temp[key] == "deletion":
+                        temp[key] = "change"
+                    if line.startswith(">") and temp[key] == "null":
+                        temp[key] = "addition"
+            if nonkey:
+                if line.startswith("<"):
+                    self.keywordDict["otherAddition"].append(line)
+                elif line.startswith(">"):
+                    self.keywordDict["otherDeletions"].append(line)
+        print(temp["maintainers"])
+        for key in self.keywordDict:
+            if temp[key] == "addition":
                 self.keywordDict[key]["addition"]=self.keywordDict[key]["addition"]+1
-                nonkey=False
-            elif temp == "change":
+                self.keywordDict[key]["additionDates"].append(self.dateOfChange)
+
+            elif temp[key] == "change":
                 self.keywordDict[key]["change"] = self.keywordDict[key]["change"] + 1
-                nonkey=False
-            elif temp == "addition":
+                self.keywordDict[key]["changeDates"].append(self.dateOfChange)
+
+            elif temp[key] == "deletion":
                 self.keywordDict[key]["deletion"] = self.keywordDict[key]["deletion"] + 1
-                nonkey=False
-        if nonkey:
-            if line.startswith("<"):
-                self.keywordDict["otherAddition"].append(line)
-            elif line.startswith(">"):
-                self.keywordDict["otherDeletions"].append(line)
+                self.keywordDict[key]["deletionDates"].append(self.dateOfChange)
+
 
 
     def extractHistory(self):
@@ -201,28 +282,43 @@ class FileChanges:
         print(self.fileHistory)
         commits = []
         files = []
+        timestamps = []
         for changes in sorted(self.fileHistory, key= lambda k: k["TimeStamp"]):
             commitID = changes["CommitID"]
             print(commitID)
             commits.append(commitID)
+            timestamps.append(changes["TimeStamp"])
             files.append("charts/"+changes["filename"])
         print(commits)
         for i in range(len(commits)-1):
+            self.dateOfChange = timestamps[i+1]
             self.checkout(commits[i], files[i],commits[i+1],files[i+1])
         print(self.keywordDict)
+        return self.keywordDict
+        #TODO: print to file
 
 
     def getTGZs(self):
         print(self.trackingdir)
         allfiles = [f for f in os.listdir(self.trackingdir) if os.path.isfile(os.path.join(self.trackingdir, f))]
         filesToTrack = []
+        jsondict = {}
+        jsondict["files"]=[]
         for filename in allfiles:
             filemodule = re.split(r"(\-)(\d+\.)(\d+\.)(\d)", filename)[0]
             if (filename.endswith("tgz") and filemodule not in filesToTrack):
                 filesToTrack.append(filemodule)
                 print(filemodule)
                 fc = FileChanges(self.trackingdir, self.tempStoragePath, filemodule)
-                fc.checkDiff()
+                resdic= fc.checkDiff()
+                jsondict["files"].append(resdic)
+
+        print(jsondict)
+        with open(os.path.join(sys.path[0],"resultjson.json"),"w") as jf:
+            print("pre")
+            json.dump(jsondict,jf)
+            print("post")
+
 
 
 if __name__ == "__main__":
