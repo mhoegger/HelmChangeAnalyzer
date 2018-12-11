@@ -17,96 +17,25 @@ class FileChanges:
         self.fileHistory = []
         self.keywordDict = {}
         self.keywordDict["ModulName"] = filename
+        self.apiversions = []
 
-        self.keywordDict["version"] = {}
-        self.keywordDict["version"]["addition"] = 0
-        self.keywordDict["version"]["change"] = 0
-        self.keywordDict["version"]["deletion"] = 0
-        self.keywordDict["version"]["additionDates"] = []
-        self.keywordDict["version"]["changeDates"] = []
-        self.keywordDict["version"]["deletionDates"] = []
+        keys = ["version", "appVersion", "description", "engine", "email", "name", "maintainers", "sources", "icon", "home", "apiVersion"]
 
-        self.keywordDict["appVersion"] = {}
-        self.keywordDict["appVersion"]["addition"] = 0
-        self.keywordDict["appVersion"]["change"] = 0
-        self.keywordDict["appVersion"]["deletion"] = 0
-        self.keywordDict["appVersion"]["additionDates"] = []
-        self.keywordDict["appVersion"]["changeDates"] = []
-        self.keywordDict["appVersion"]["deletionDates"] = []
+        for k in keys:
+            self.keywordDict[k] = {}
+            self.keywordDict[k]["addition"] = 0
+            self.keywordDict[k]["change"] = 0
+            self.keywordDict[k]["deletion"] = 0
+            self.keywordDict[k]["additionDates"] = []
+            self.keywordDict[k]["changeDates"] = []
+            self.keywordDict[k]["deletionDates"] = []
 
-        self.keywordDict["description"] = {}
-        self.keywordDict["description"]["addition"] = 0
-        self.keywordDict["description"]["change"] = 0
-        self.keywordDict["description"]["deletion"] = 0
-        self.keywordDict["description"]["additionDates"] = []
-        self.keywordDict["description"]["changeDates"] = []
-        self.keywordDict["description"]["deletionDates"] = []
 
-        self.keywordDict["engine"] = {}
-        self.keywordDict["engine"]["addition"] = 0
-        self.keywordDict["engine"]["change"] = 0
-        self.keywordDict["engine"]["deletion"] = 0
-        self.keywordDict["engine"]["additionDates"] = []
-        self.keywordDict["engine"]["changeDates"] = []
-        self.keywordDict["engine"]["deletionDates"] = []
+        self.keywordDict["appVersion"]["VersionUpdates"] = []
+        self.keywordDict["apiVersion"]["VersionUpdates"] = []
+        self.keywordDict["version"]["VersionUpdates"] = []
 
-        self.keywordDict["email"] = {}
-        self.keywordDict["email"]["addition"] = 0
-        self.keywordDict["email"]["change"] = 0
-        self.keywordDict["email"]["deletion"] = 0
-        self.keywordDict["email"]["additionDates"] = []
-        self.keywordDict["email"]["changeDates"] = []
-        self.keywordDict["email"]["deletionDates"] = []
-
-        self.keywordDict["name"] = {}
-        self.keywordDict["name"]["addition"] = 0
-        self.keywordDict["name"]["change"] = 0
-        self.keywordDict["name"]["deletion"] = 0
-        self.keywordDict["name"]["additionDates"] = []
-        self.keywordDict["name"]["changeDates"] = []
-        self.keywordDict["name"]["deletionDates"] = []
-
-        self.keywordDict["maintainers"] = {}
-        self.keywordDict["maintainers"]["addition"] = 0
-        self.keywordDict["maintainers"]["change"] = 0
-        self.keywordDict["maintainers"]["deletion"] = 0
-        self.keywordDict["maintainers"]["additionDates"] = []
-        self.keywordDict["maintainers"]["changeDates"] = []
-        self.keywordDict["maintainers"]["deletionDates"] = []
-
-        self.keywordDict["sources"] = {}
-        self.keywordDict["sources"]["addition"] = 0
-        self.keywordDict["sources"]["change"] = 0
-        self.keywordDict["sources"]["deletion"] = 0
-        self.keywordDict["sources"]["additionDates"] = []
-        self.keywordDict["sources"]["changeDates"] = []
-        self.keywordDict["sources"]["deletionDates"] = []
-
-        self.keywordDict["icon"] = {}
-        self.keywordDict["icon"]["addition"] = 0
-        self.keywordDict["icon"]["change"] = 0
-        self.keywordDict["icon"]["deletion"] = 0
-        self.keywordDict["icon"]["additionDates"] = []
-        self.keywordDict["icon"]["changeDates"] = []
-        self.keywordDict["icon"]["deletionDates"] = []
-
-        self.keywordDict["home"] = {}
-        self.keywordDict["home"]["addition"] = 0
-        self.keywordDict["home"]["change"] = 0
-        self.keywordDict["home"]["deletion"] = 0
-        self.keywordDict["home"]["additionDates"] = []
-        self.keywordDict["home"]["changeDates"] = []
-        self.keywordDict["home"]["deletionDates"] = []
-
-        self.keywordDict["apiVersion"] = {}
-        self.keywordDict["apiVersion"]["addition"] = 0
-        self.keywordDict["apiVersion"]["change"] = 0
-        self.keywordDict["apiVersion"]["deletion"] = 0
-        self.keywordDict["apiVersion"]["additionDates"] = []
-        self.keywordDict["apiVersion"]["changeDates"] = []
-        self.keywordDict["apiVersion"]["deletionDates"] = []
-
-        self.keywordDict["otherAddition"] = []
+        self.keywordDict["otherAdditions"] = []
         self.keywordDict["otherDeletions"] = []
         self.dateOfChange = ""
 
@@ -182,6 +111,10 @@ class FileChanges:
     def checkForKeywords(self, changes):
         # temparary variable to save whether addition, deletion or change
         temp = {}
+        templine1 = {}
+        templine2 = {}
+
+
         for key in self.keywordDict:
             temp[key]="null"
 
@@ -191,16 +124,22 @@ class FileChanges:
                 if key in line:
                     nonkey = False
                     if line.startswith("<"):
+                        if key == "apiVersion":
+                            self.apiversions.append(changes)
                         temp[key] = "deletion"
+                        templine1[key] = line
                     if line.startswith(">") and temp[key] == "deletion":
+                        templine2[key] = line
                         temp[key] = "change"
                     if line.startswith(">") and temp[key] == "null":
+                        if key == "apiVersion":
+                            self.apiversions.append(changes)
                         temp[key] = "addition"
             if nonkey:
                 if line.startswith("<"):
-                    self.keywordDict["otherAddition"].append(line)
-                elif line.startswith(">"):
                     self.keywordDict["otherDeletions"].append(line)
+                elif line.startswith(">"):
+                    self.keywordDict["otherAdditions"].append(line)
         print(temp["maintainers"])
         for key in self.keywordDict:
             if temp[key] == "addition":
@@ -208,6 +147,7 @@ class FileChanges:
                 self.keywordDict[key]["additionDates"].append(self.dateOfChange)
 
             elif temp[key] == "change":
+                self.keyCustom(key, self.dateOfChange, templine1[key], templine2[key])
                 self.keywordDict[key]["change"] = self.keywordDict[key]["change"] + 1
                 self.keywordDict[key]["changeDates"].append(self.dateOfChange)
 
@@ -216,6 +156,47 @@ class FileChanges:
                 self.keywordDict[key]["deletionDates"].append(self.dateOfChange)
 
 
+    def versionAnalyze(self,key, date, line1, line2):
+        dict = {}
+        try:
+            pre1, major1, dot1, minor1, dot2, build1, post1 = re.split(r"(\d)(\.)(\d)(\.)(\d)", line1)
+            pre2, major2, dot1, minor2, dot2, build2, post2 = re.split(r"(\d)(\.)(\d)(\.)(\d)", line2)
+            if (major1 == major2 and minor1 == minor2 and build1 != build2):
+                dict["type"] = "Service"
+                dict["increment"] = int(build2) - int(build1)
+            elif (major1 == major2 and minor1 != minor2):
+                dict["type"] = "Minor"
+                dict["increment"] = int(minor2) - int(minor1)
+            elif (major1 != major2):
+                dict["type"] = "Major"
+                dict["increment"] = int(major2) - int(major1)
+            else:
+                ict["type"] = major1 + dot1 + minor1 + dot2 + build1 + "->" + major2 + dot2 + minor2 + dot2 + build2
+            dict["date"] = date
+
+        except:
+            dict["type"] = "Unknown"
+            dict["increment"] = line1 + "->" + line2
+            dict["date"] = date
+        return dict
+
+    def keyCustom(self, key, date, line1, line2):
+        if key == "version":
+            self.keywordDict[key]["VersionUpdates"].append(self.versionAnalyze(key,date,line1,line2))
+        if key == "appVersion":
+            self.keywordDict[key]["VersionUpdates"].append(self.versionAnalyze(key,date,line1,line2))
+        if key == "apiVersion":
+            pre1, v1, version1, post1 = re.split(r"(v)(\d)", line1)
+            pre2, v2, version2, post2 = re.split(r"(v)(\d)", line2)
+
+            dict={}
+            print("$$$$$$$$"+version2-version1)
+            print("$$$$$$$$"+version2-version1)
+            print("$$$$$$$$"+version2-version1)
+            print("$$$$$$$$"+version2-version1)
+            dict["date"]=date
+            dict["increase"]=Version2-version1
+            self.keywordDict[key]["VersionUpdates"].append(dict)
 
     def extractHistory(self):
         date = None
@@ -311,6 +292,7 @@ class FileChanges:
                 print(filemodule)
                 fc = FileChanges(self.trackingdir, self.tempStoragePath, filemodule)
                 resdic= fc.checkDiff()
+                self.apiversions.append(fc.apiversions)
                 jsondict["files"].append(resdic)
 
         print(jsondict)
@@ -318,6 +300,14 @@ class FileChanges:
             print("pre")
             json.dump(jsondict,jf)
             print("post")
+        print(self.apiversions)
+        print(self.apiversions)
+        print(self.apiversions)
+        print(self.apiversions)
+        print(self.apiversions)
+        print(self.apiversions)
+        print(self.apiversions)
+
 
 
 

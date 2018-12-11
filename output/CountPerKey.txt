@@ -1,0 +1,11 @@
+version: 0|708|0
+appVersion: 53|252|44
+description: 0|141|0
+engine: 40|0|43
+email: 34|90|32
+name: 13|214|8
+maintainers: 14|0|13
+sources: 6|0|7
+icon: 22|48|26
+home: 10|97|11
+apiVersion: 29|0|26
