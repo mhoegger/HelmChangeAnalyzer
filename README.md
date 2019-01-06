@@ -20,11 +20,14 @@ run the process and where the results are saved.
 Run the `tgzComparison.py`
 
 If the whole repository should be analysed run the script with these arguments:
-`repo <all|content|count> <outputPath> <trackingdir> <tempStoragePath>`
+```bash
+python tgzComparison.py repo <all|content|count> <outputPath> <trackingdir> <tempStoragePath>
+```
 
 If the only one file should be analysed run the script with these arguments:
-`file <all|content|count> <outputPath> <trackingdir> <tempStoragePath> <filename>`
-
+```bash
+python tgzComparison.py file <all|content|count> <outputPath> <trackingdir> <tempStoragePath> <filename>
+```
 ### The arguments
 
 #### < all|content|count >
