@@ -5,15 +5,15 @@ files and runs a diff on it. Based in the different fields a Helm-chart contains
 it counts the additions, deletions, and changes of these fields. This tool can be applied to a single 
 file or the whole repository.
 
-## Getting Started
-
-These instructions will explain how our results can be replicated. It will explain how you can
-run the process and where the results are saved.
-
-### Prerequisites
+## Prerequisites
 
 Make sure that you are in possesion of a repository with heml charts. Also make sure that you are running a Lunix machine 
 otherwise some of the scrips might not work
+
+## Run the Analysis
+
+These instructions will explain how our results can be replicated. It will explain how you can
+run the process and where the results are saved.
 
 ### How to Run
 
@@ -51,6 +51,21 @@ Path to where the tgz should be temporarely be extracted to.
 
 #### < filename >
 Filename of the file to be analysed. should en with tgz. only the name not the whole path.
+  
+## Run the Plottong  
+
+### How to Run
+
+Run the `analyzer.py`
+
+with the path to the `resultjson.json` and the path the where the output should be stored at as arguments
+
+### Example
+
+```bash
+python analyzer.py ./resultjson.json ./output
+```
+
   
 ## Content
 
