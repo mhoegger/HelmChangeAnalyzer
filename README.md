@@ -27,7 +27,7 @@ If the only one file should be analysed run the script with these arguments:
 
 ### The arguments
 
-#### <all|content|count>
+#### < all|content|count >
 Defines what output should be generated:	
 ##### content
 Generates a json for each file where for each key all the changes are listed.
@@ -40,16 +40,16 @@ together with the date and some additional information.
 ##### all
 Does both of the above
 
-#### <outputPath>
+#### < outputPath >
 Path to where the output Json should be stored
 
-#### <trackingdir>
+#### < trackingdir >
 Path to the directory in the repo where the charts are stored at.
 
-#### <tempStoragePath>
+#### < tempStoragePath >
 Path to where the tgz should be temporarely be extracted to.
 
-#### <filename>
+#### < filename >
 Filename of the file to be analysed. should en with tgz. only the name not the whole path.
   
 ## Content
