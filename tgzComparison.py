@@ -18,6 +18,7 @@ class FileChanges:
         self.keywordDict = {}
         self.keywordDict["ModulName"] = filename
         self.apiversions = []
+        self.keyChanges = {}
 
         keys = ["version", "appVersion", "description", "engine", "email", "name", "maintainers", "sources", "icon", "home", "apiVersion"]
 
@@ -29,6 +30,8 @@ class FileChanges:
             self.keywordDict[k]["additionDates"] = []
             self.keywordDict[k]["changeDates"] = []
             self.keywordDict[k]["deletionDates"] = []
+
+            self.keyChanges[k] = []
 
 
         self.keywordDict["appVersion"]["VersionUpdates"] = []
@@ -122,6 +125,7 @@ class FileChanges:
             nonkey = True
             for key in self.keywordDict:
                 if key in line:
+                    self.keyChanges[key].append(line)
                     nonkey = False
                     if line.startswith("<"):
                         if key == "apiVersion":
@@ -190,10 +194,6 @@ class FileChanges:
             pre2, v2, version2, post2 = re.split(r"(v)(\d)", line2)
 
             dict={}
-            print("$$$$$$$$"+version2-version1)
-            print("$$$$$$$$"+version2-version1)
-            print("$$$$$$$$"+version2-version1)
-            print("$$$$$$$$"+version2-version1)
             dict["date"]=date
             dict["increase"]=Version2-version1
             self.keywordDict[key]["VersionUpdates"].append(dict)
@@ -279,7 +279,7 @@ class FileChanges:
         #TODO: print to file
 
 
-    def getTGZs(self):
+    def getTGZs(self, content, count, outPath):
         print(self.trackingdir)
         allfiles = [f for f in os.listdir(self.trackingdir) if os.path.isfile(os.path.join(self.trackingdir, f))]
         filesToTrack = []
@@ -295,19 +295,45 @@ class FileChanges:
                 self.apiversions.append(fc.apiversions)
                 jsondict["files"].append(resdic)
 
+                if content:
+                    pathToStore = os.path.join(outPath, "FileHistory/")
+                    os.makedirs(pathToStore, exist_ok=True)
+                    with open(os.path.join(pathToStore, filemodule + "_ChangeHistory.json"), "w") as hf:
+                        print("pre")
+                        histDict={}
+                        histDict["History"]=fc.keyChanges
+                        json.dump(histDict, hf)
+                        print("post")
         print(jsondict)
-        with open(os.path.join(sys.path[0],"resultjson.json"),"w") as jf:
-            print("pre")
-            json.dump(jsondict,jf)
-            print("post")
-        print(self.apiversions)
-        print(self.apiversions)
-        print(self.apiversions)
-        print(self.apiversions)
-        print(self.apiversions)
-        print(self.apiversions)
-        print(self.apiversions)
+        if count:
+            with open(os.path.join(outPath,"resultjson.json"),"w") as jf:
+                print("pre")
+                json.dump(jsondict,jf)
+                print("post")
 
+    def singleFile(self, file, content, count, outPath):
+        jsondict = {}
+        jsondict["files"]=[]
+        if (file.endswith("tgz")):
+            fc = FileChanges(self.trackingdir, self.tempStoragePath, file)
+            resdic = fc.checkDiff()
+            self.apiversions.append(fc.apiversions)
+            jsondict["files"].append(resdic)
+
+            if content:
+                pathToStore = os.path.join(outPath, "FileHistory/")
+                os.makedirs(pathToStore, exist_ok=True)
+                with open(os.path.join(pathToStore, filemodule + "_ChangeHistory.json"), "w") as hf:
+                    print("pre")
+                    histDict = {}
+                    histDict["History"] = fc.keyChanges
+                    json.dump(histDict, hf)
+                    print("post")
+        if count:
+            with open(os.path.join(outPath,"resultjson_"+file+".json"),"w") as jf:
+                print("pre")
+                json.dump(jsondict,jf)
+                print("post")
 
 
 
@@ -319,39 +345,54 @@ if __name__ == "__main__":
         sys.exit(1)
     command = sys.argv[1]
 
-    if command == "commit":
-        if len(sys.argv) != 4:
-            print("Syntax: {} tgz <tempStoragePath> <commitId1> <commitId2>".format(sys.argv[0]), file=sys.stderr)
-            sys.exit(1)
-        else:
-            tempStoragePath = sys.argv[1]
-            commitId1 = sys.argv[2]
-            commitId2 = sys.argv[3]
-            print("running tgz with "+tempStoragePath+", "+trackingdir+", "+commitId+".")
 
     if command == "file":
-        print(len(sys.argv))
-        if len(sys.argv) != 5:
-            print("Syntax: {} file <trackingdir> <tempStoragePath> <filename>".format(sys.argv[0]), file=sys.stderr)
+        what = sys.argv[2]
+        output = sys.argv[3]
+        if len(sys.argv) != 7:
+            print("Syntax: {} file <all|content|count> <outputPath> <trackingdir> <tempStoragePath> <filename>".format(sys.argv[0]), file=sys.stderr)
             sys.exit(1)
         else:
-            trackingdir = sys.argv[2]
-            tempStoragePath = sys.argv[3]
-            filename = sys.argv[4]
-            print("running 'file' with "+trackingdir+", "+tempStoragePath+", "+filename+".")
+            trackingdir = sys.argv[4]
+            tempStoragePath = sys.argv[5]
+            filename = sys.argv[6]
             fc = FileChanges(trackingdir,tempStoragePath, filename)
-            fc.checkDiff()
+            if what == "all":
+                print("running 'file' with 'all' " + trackingdir + ", " + tempStoragePath + ".")
+                fc.singleFile(filename, True, True, output)
+            elif what == "content":
+                print("running 'file' with 'content' " + trackingdir + ", " + tempStoragePath + ".")
+                fc.singleFile(filename, True, False, output)
+            elif what == "count":
+                print("running 'file' with 'count' " + trackingdir + ", " + tempStoragePath + ".")
+                fc.singleFile(filename, False, True, output)
+            else:
+                print("Invalid second argument, must be 'all', 'content' or 'count'", file=sys.stderr)
+        sys.exit(1)
 
-    if command == "repo":
-        print(len(sys.argv))
-        if len(sys.argv) != 4:
-            print("Syntax: {} repo <trackingdir> <tempStoragePath>".format(sys.argv[0]), file=sys.stderr)
+    elif command == "repo":
+        what = sys.argv[2]
+        output = sys.argv[3]
+        if len(sys.argv) != 6:
+            print("Syntax: {} repo <all|content|count> <outputPath> <trackingdir> <tempStoragePath>".format(sys.argv[0]), file=sys.stderr)
             sys.exit(1)
         else:
-            trackingdir = sys.argv[2]
-            tempStoragePath = sys.argv[3]
-            print("running 'file' with "+trackingdir+", "+tempStoragePath+".")
+            trackingdir = sys.argv[4]
+            tempStoragePath = sys.argv[5]
             fc = FileChanges(trackingdir,tempStoragePath)
-            fc.getTGZs()
+            if what == "all":
+                print("running 'repo' with 'all' "+trackingdir+", "+tempStoragePath+".")
+                fc.getTGZs(True, True, output)
+            elif what == "content":
+                print("running 'repo' with 'content' "+trackingdir+", "+tempStoragePath+".")
+                fc.getTGZs(True, False, output)
+            elif what == "count":
+                print("running 'repo' with 'count' "+trackingdir+", "+tempStoragePath+".")
+                fc.getTGZs(False, True, output)
+            else:
+                print("Invalid second argument, must be 'all', 'content' or 'count'", file=sys.stderr)
+        sys.exit(1)
+
+
     else:
         print("Unknown command.", file=sys.stderr)
